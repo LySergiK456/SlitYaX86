@@ -1,0 +1,116 @@
+BDIR = ./build/linux
+GCC = ccache gcc
+GXX = ccache g++
+NASM = ccache nasm
+
+X86_CFLAGS=	-lx86disass
+UC_CFLAGS =	-lunicorn
+
+objs = syx86.o linux_main.o linux_ldr.o linux_ldr_env.o elf.o utils.o llist.o uc.o mem.o shadow.o rel_yayo.o
+vm_objs = syx86.o linux_main.o linux_ldr.o linux_ldr_env.o elf.o utils.o llist.o uc.o mem.o shadow.o self_maps.o rel_yayo.o
+_1dlsd_objs = syx86.o core_yayo.o test_linux_1dlsd.o linux_ldr.o self_maps.o yayo.o shellcode.o uc.o elf.o util.o utils.o llist.o rel_1dlsd.o mem.o shadow.o x_assid.o rel_yayo.o #win_assid.o #
+
+CXXFLAGS = -w -g -MMD -MP -lunicorn -lx86disass
+CFLAGS = -w -g -MMD -MP -lunicorn -lx86disass
+
+#linux_ldr.o uc.o: CFLAGS += -lunicorn
+test_linux_1dlsd.o xtc.o rel_yayo.o rel_1dlsd.o: CXXFLAGS += $(UC_CFLAGS)
+
+-include $(objs:%=$(BDIR)/%.d)
+
+MAKE = make
+ECHO = echo
+MKDIR= mkdir
+
+TARGET = ./specimen/a.out
+
+all: make_linux
+
+.PHONY: make_linux
+make_linux: make_builddir $(objs)
+	@echo "[+] Compiling with -lunicorn -lx86disass"
+	$(GXX) $(addprefix $(BDIR)/,$(objs)) -lx86disass -lunicorn $(CXXFLAGS) -o ./syx86
+	@echo "-----------------------------"
+	@echo ""
+
+.PHONY: run
+run:
+	@echo "[+] Running " $(TARGET)
+	./syx86 $(TARGET)
+
+###
+# Tests
+#
+.PHONY: test_1dlsd
+test_1dlsd: make_builddir $(_1dlsd_objs)
+	$(GXX) $(addprefix $(BDIR)/,$(_1dlsd_objs)) $(X86_LDFLAGS) -lx86disass $(UC_LDFLAGS) -lunicorn $(CXXFLAGS) -o syx86
+	./syx86 $(TARGET)
+
+.PHONY: test_vm
+test_vm: make_builddir $(vm_objs)
+	$(GXX) $(addprefix $(BDIR)/,$(vm_objs)) $(X86_LDFLAGS) -lx86disass $(UC_LDFLAGS) -lunicorn $(CXXFLAGS) -o syx86
+	./syx86 $(TARGET)
+
+
+clean:
+	rm -rf $(BDIR)/*
+
+make_builddir:
+	@if [ ! -d "$(BDIR)" ]; then				\
+		$(ECHO) "-----------------------------";\
+		$(ECHO) "Making build dir " "$(BDIR)";	\
+		$(MKDIR) -p $(BDIR);					\
+		$(MKDIR) -p $(BDIR)/dat;				\
+		$(MKDIR) -p $(BDIR)/symbols				\
+		$(MKDIR) -p $(BDIR)/xtc_table			\
+		$(ECHO) "-----------------------------";\
+	fi
+
+###
+# To build Object files
+#
+%.o: ./tests/%.cc
+	$(GXX) -c $< -o $(BDIR)/$@ $(CFLAGS) $(CXXFLAGS)
+
+%.o: ./src/syx86/loader/linux/%.cc
+	$(GXX) -c $< -o $(BDIR)/$@ $(CFLAGS) $(CXXFLAGS)
+
+%.o: ./src/syx86/%.c
+	$(GCC) -c $< -o $(BDIR)/$@ $(CFLAGS)
+
+%.o: ./src/syx86/%.cc
+	$(GXX) -c $< -o $(BDIR)/$@ $(CFLAGS) $(CXXFLAGS)
+
+%.o: ./src/elf/%.cc
+	$(GXX) -c $< -o $(BDIR)/$@ $(CFLAGS) $(CXXFLAGS)
+
+%.o: ./src/common/%.c
+	$(GCC) -c $< -o $(BDIR)/$@ $(CFLAGS)
+
+%.o: ./src/1d-lsd/%.c
+	$(GCC) -c $< -o $(BDIR)/$@ $(CFLAGS)
+
+%.o: ./src/1d-lsd/%.cc
+	$(GXX) -c $< -o $(BDIR)/$@ $(CFLAGS) $(GXXFLAGS)
+
+%.o: ./src/1d-lsd/rel_yayo/%.c
+	$(GCC) -c $< -o $(BDIR)/$@ $(CFLAGS)
+
+%.o: ./src/1d-lsd/rel_yayo/%.cc
+	$(GXX) -c $< -o $(BDIR)/$@ $(CFLAGS) $(GXXFLAGS)
+
+
+%.o: ./src/1d-lsd/linux/%.cc
+	$(GXX) -c $< -o $(BDIR)/$@ $(CFLAGS) $(GXXFLAGS)
+
+%.o: ./src/common/%.cc
+	$(GXX) -c $< -o $(BDIR)/$@ $(CFLAGS) $(GXXFLAGS)
+
+%.o: ./src/common/%.c
+	$(GCC) -c $< -o $(BDIR)/$@ $(CFLAGS)
+
+%.o: ./src/memory/%.cc
+	$(GXX) -c $< -o $(BDIR)/$@ $(CFLAGS) $(GXXFLAGS)
+
+%.o: ./src/1d-lsd/core/%.asm
+	$(NASM) -f elf64 $< -o $(BDIR)/$@

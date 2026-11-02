@@ -1,0 +1,43 @@
+BDIR = ./build/linux
+GCC = ccache gcc
+GXX = ccache g++
+
+UTILS_PATH := $(abspath ../../utils/src)
+LIB_DISASS := $(abspath ../libx86disass/)
+LIB_BINARY := $(abspath ../libx86binary/)
+
+X86_CFLAGS=	-I$(LIB_DISASS)/include
+X86_LDFLAGS=-L$(LIB_DISASS)/build/
+
+BIN_CFLAGS= -I$(LIB_BINARY)/include
+BIN_LDFLAGS=-L$(LIB_BINARY)/build/linux
+
+CXXFLAGS = -w -MMD -MP
+CFLAGS = -w -g -MMD -MP $(X86_CFLAGS) $(BIN_CFLAGS)
+
+objs = ./rel_lsd25.o ./nix_assid.o ./llist.o ./utils.o ./self_maps.o
+TEST_MAIN = ./test_lsd25_linux.cc
+
+-include $(objs:%=$(BDIR)/%.d)
+
+all: $(objs)
+	@echo "[+] Building libx86lsd25 (linux/ELF)"
+	@cd $(BDIR); ar rvs libx86lsd25.a $^
+
+.PHONY: example
+example: $(objs)
+	@echo "[+] (lsd25) Building (linux/ELF) Example"
+	$(GXX) $(TEST_MAIN) $(addprefix ./$(BDIR)/,$(objs)) $(X86_LDFLAGS) $(BIN_LDFLAGS) -lx86disass -lx86binary $(CXXFLAGS) -o ./$(BDIR)/linux_example
+	@$(shell which time) ./$(BDIR)/linux_example
+
+%.o: ./src/%.cc
+	$(GXX) -c $< $(CFLAGS) $(CXXFLAGS) -o ./$(BDIR)/$@
+
+%.o: ./src/linux/%.cc
+	$(GXX) -c $< $(CFLAGS) $(CXXFLAGS) -o ./$(BDIR)/$@
+
+%.o: $(UTILS_PATH)/linux/%.cc
+	$(GXX) -c $< $(CFLAGS) $(CXXFLAGS) -o ./$(BDIR)/$@
+
+%.o: $(UTILS_PATH)/%.c
+	$(GCC) -c $< $(CFLAGS) -o ./$(BDIR)/$@

@@ -1,0 +1,32 @@
+BDIR = ./build/linux
+GCC = ccache gcc
+GXX = ccache g++
+
+UTILS_PATH := $(abspath ../../utils/src)
+LIB_DISASS := $(abspath ../libx86disass/)
+X86_CFLAGS=	-I./$(LIB_DISASS)/include
+X86_LDFLAGS=-L./$(LIB_DISASS)/build/
+
+CXXFLAGS = -w -MMD -MP
+CFLAGS = -w -g -MMD -MP $(X86_CFLAGS)
+
+objs = ./elf.o ./llist.o ./utils.o
+TEST_MAIN = ./test_elf.cc
+
+-include $(objs:%=$(BDIR)/%.d)
+
+all: $(objs)
+	@echo "[+] Building libx86binary (linux/ELF)"
+	@cd $(BDIR); ar rvs libx86binary.a $^
+
+.PHONY: example
+example: $(objs)
+	@echo "[+] Building (linux/ELF) Example"
+	$(GXX) $(TEST_MAIN) -lx86disass $(X86_LDFLAGS) $(X86_CFLAGS) $(addprefix ./$(BDIR)/,$(objs)) $(CXXFLAGS) -o ./$(BDIR)/linux_example
+	@$(shell which time) ./$(BDIR)/linux_example
+
+%.o: ./src/elf/%.cc
+	$(GXX) -c $< $(CFLAGS) $(CXXFLAGS) -o ./$(BDIR)/$@
+
+%.o: $(UTILS_PATH)/%.c
+	$(GCC) -c $< $(CFLAGS) -o ./$(BDIR)/$@

@@ -1,0 +1,5 @@
+BDIR = ./build/windows
+GCC = ccache gcc
+GXX = ccache g++
+
+objs = pe64.o ./pe64_binary.o
