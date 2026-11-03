@@ -181,6 +181,9 @@ LSD_API void Lyss::insert(enum LSD25_TYPE t, void *mem, __u64 size, __u64 offset
  * Build the binary
 **/
 void lsd25::make(char *f) {
+    mm_t mm{.mem=xmalloc(0x4000), .t=MM_HEAP, .sz=0x4000};
+    yayo.do_reloc(mm);
+    
     auto out = Util::outfile_t(f);
 
     printf(BGRN"[" BBLUE"lsd25" BGRN"]"CRST" - ~[+]~ Dumping to [%s]\n", f);

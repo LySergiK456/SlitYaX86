@@ -14,10 +14,10 @@ enum yayo_ref_t {
     YAYO_VMMAP = 8,
 };
 enum yayo_px_t {
-    YAYO_REL        = 1,
-    YAYO_REPLACE    = 2,
-    YAYO_ADD    = 4,
-    YAYO_REMOVE = 8,
+    YAYO_PX_REL     = 1,
+    YAYO_PX_REPLACE = 2,
+    YAYO_PX_ADD     = 4,
+    YAYO_PX_REMOVE  = 8,
 };
 enum yayo_hook_t {
     YAYO_HOOK_ORIG = 1,
@@ -68,7 +68,7 @@ struct y_aye_tic {
     enum yayo_ref_t     t;
     yayo_imm_hook_t     hook_fn;
     union {
-        /* PE64*/
+        /* Binary Segment/Section*/
         struct {
             bin_t	*img;
             __u64	off;
@@ -90,7 +90,7 @@ struct y_aye_tic {
         // } uc;
     };
     struct {
-        __u64       off;
+        __s64       align;
     } out;
     // LLIST_OF(struct xtc_px)		ll_xtc_px;
     LLIST_OF(struct yayo_px)	ll_yayo_px;

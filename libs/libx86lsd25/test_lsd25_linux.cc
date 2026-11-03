@@ -24,6 +24,15 @@ static char *SC =
 	"\xcc\xcc";
 // Header, Data, Code, lsd_map
 LSD_STATUS ObfuscA::_init_(Assid::NixLSD25 *lsd) {
+	pr(BGRN"["BBLUE"+"BGRN"]"CRST " initializing " BYLW"yayo"CRST);
+	auto *img_tic = lsd->yayo._rel_init_(&lsd->lyss->bin, 0, lsd->lyss->bin.size);
+	lsd->parse<ELF_Phdr>([&](__u64 off, struct lsd25_entry& e) {
+		auto *ph = reinterpret_cast<Elf64_Phdr*>(e.raw_mem);
+		if (ph->p_type == PT_LOAD && !!(ph->p_flags&PF_X)) {
+			img_tic->_rel_(YAYO_PX_REL, ph->p_offset, ph->p_filesz, ph->p_offset, ph->p_filesz);
+		}
+	});
+	
 	auto phdr_st = lsd->lyss->VecLyssByType(ELF_Phdr);
 	assert(!phdr_st.empty());
 	__u64 i{};

@@ -17,6 +17,7 @@ extern "C" {
 #endif
 #include "../../libx86binary/include/binary/binary.hh"
 #include "../../../utils/include/mem.hh"
+#include "./rel_insn.hh"
 // #include "../syx86/syx86.hh"
 
 #ifndef LSD25_HH
@@ -33,6 +34,11 @@ namespace Assid {
         class ElfObj;
         class NixLyss;
     #endif
+
+};
+
+namespace Assid::Dot {
+    class Dot;
 };
 
 using MT    = MemConvType;
@@ -145,6 +151,37 @@ private:
 };
 };
 
+
+#ifndef LSD25_DOTS_HH
+#define LSD25_DOTS_HH
+namespace Assid::Dot {
+    class Assid::lsd25;
+};
+
+namespace Assid::Dot {
+    struct dot_analyzer {
+        std::list<std::pair<struct lsd25_entry*, __u64>>    pt_load_caves;
+    };
+};
+
+namespace Assid {
+namespace Dot {
+    class Dot {
+        Assid::lsd25    *lsd;
+    public:
+        RILkit::Yayo    yayo;
+        dot_analyzer    anal;
+
+        Dot(Assid::lsd25 *_lsd);
+
+        friend class lsd25;
+    };
+};
+// LSD_API __u64 lsd_align(struct rel_yayo *ctx, __u64 offset);
+};
+#endif
+
+
 namespace Assid {
 class AcidPass {
     // Util::MMap_t<lsd_oper_calback>  op_callbacks;
@@ -184,12 +221,14 @@ class AcidPass {
 
 namespace Assid {
 class lsd25 : public lsd25_pack_t {
+    Dot::Dot        dot;
 public:
     AcidPass&       pass;
     Lyss            *lyss;
+    RILkit::Yayo&   yayo{dot.yayo};
 
     lsd25(AcidPass& _pass, Lyss *l)
-        : pass{_pass}, lsd25_pack_t{0}, lyss{l}
+        : pass{_pass}, lsd25_pack_t{0}, lyss{l}, dot(this)
     {
         llist_init(&ll_px,    sizeof(struct lsd25_entry));
         // llist_init(&ll_rel,   sizeof(struct rel_yayo));
@@ -209,7 +248,4 @@ public:
     void make(char *f);
 };
 };
-
-// LSD_API __u64 lsd_align(struct rel_yayo *ctx, __u64 offset);
 #endif
-

@@ -25,8 +25,8 @@ __u32 get_inst_type(instr_dat_t *ret, operand *op);
 		for (instr_dat_t in = {0}; ptr < limit && init_instr((t), (&in), (ptr)) != -1 ; ptr += in.in_sz)
 
 #define foreach_instr_off(t, in, i, ptr, len)						\
-		for (instr_dat_t in = {0}; i < len ; i += in.in_sz)			\
-			if (init_instr((t), (&in), (ptr + i)) != -1 || (i++ && 0))
+		for (instr_dat_t in = {0}; i < len ; i += (!!in.in_sz) ? in.in_sz : 1)			\
+			if (init_instr((t), (&in), (ptr + i)) || 1)
 
 #ifndef DISASS_UAPI_H
 #define DISASS_UAPI_H
