@@ -37,33 +37,32 @@ LSD_API void Lyss::push(Bin_t *img, enum LSD25_TYPE t, bin_hdr_t& v) {
             __u64 min = std::min(entry.dst.off, v.off);
             __u64 lvl = std::max(entry.dst.off, v.off);
             __u64 left= std::min(entry.dst.off + entry.dst.sz, v.off + v.mm.sz);
-            __u64 max = std::max(entry.dst.off + entry.dst.sz, v.off + v.mm.sz);
-            std::vector<__u64> vec{min, lvl, left, max};
-
-            prf(BRED "%lx; %lx; %lx; %lx\n"CRST, min, lvl, left, max);
-            prf(BGRN "%lx sz=%lx; %lx sz=%lx\n"CRST, entry.dst.off, entry.dst.sz, v.off, v.mm.sz);
+            __u64 rght = std::max(entry.dst.off + entry.dst.sz, v.off + v.mm.sz);
+            std::vector<__u64> vec{min, lvl, left, rght};
 
             for (auto& _off_ : vec)
             {
-                __u64 next{max};
-                for (auto i_off : vec)
-                {
+                __u64 next{rght};
+                for (auto i_off : vec) {
                     if (i_off > _off_ && i_off < next)
                         next = i_off;
                 }
-                __u64 size = next - _off_;
-                if (!lsd_map.count(_off_) && (_off_ < max && _off_ >= min && _off_ != left)) {
-                    prf(BYLW "[%lx] %lx\n"CRST, _off_, size);
 
+                __u64 size = next - _off_;
+                if (    !!size && !lsd_map.count(_off_)
+                    &&  (_off_ < rght && _off_ >= min && _off_ != left))
+                {
                     lsd_map[_off_] = (struct lsd25_entry){
-                        .t=(!!_contain_(entry.dst.off, entry.dst.sz, _off_)) ? entry.t : t,
-                        .raw_mem=reinterpret_cast<void*>(&img->src.mem[_off_]),
+                        .t=(_off_ >= entry.dst.off && _off_ < entry.dst.off + entry.dst.sz) ? entry.t : t,
+                        .mm={
+                            .mem=reinterpret_cast<void*>(&img->src.mem[_off_]),
+                            .sz =size
+                        },
                         .src={ img, _off_, size },
                         .dst={ _off_, size }
                     };
                 }
             }
-            pr("\n");
             return;
         }
     }

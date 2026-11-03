@@ -174,11 +174,6 @@ void NixLyss::LyssAlignBin(__u64 off, __u64 sz) {
 
     feach(ELF_Dyn, [&](Elf64_Dyn *dyn, void *_) {
         if (!!Elf::dyn_is_ptr(dyn)) {
-            printf("LOOKUP off=%#lx\n", off);
-
-            for (auto& [base, e] : lsd_map)
-                printf("RANGE [%#lx - %#lx]\n", base, base + e.mm.sz);
-            
             prf("BEFOR [0x%lx]\n", dyn->d_un.d_ptr);
             dyn->d_un.d_ptr =
                 orig_vtov(&bin, dyn->d_un.d_ptr);
