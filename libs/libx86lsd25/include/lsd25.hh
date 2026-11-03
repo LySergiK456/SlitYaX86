@@ -2,8 +2,9 @@
 #include <elf.h>
 #endif
 #include <map>
-#include <memory>
+#include <list>
 #include <vector>
+#include <memory>
 extern "C" {
     #include "../../../utils/types.h"
     #include "../../libx86binary/include/binary/binary.h"
@@ -100,8 +101,9 @@ public:
         return i;
     }
 
-    LSD_API void insert(enum LSD25_TYPE, void*, __u64, __u64, void*, __u32, void*);
-    LSD_API struct lsd25_entry *LyssByType(enum LSD25_TYPE t, __u64 off);
+    LSD_API void insert(enum LSD25_TYPE, void*, __u64, __u64);
+    LSD_API struct lsd25_entry *LyssByType(enum LSD25_TYPE t, __u64 off=0);
+    LSD_API std::vector<struct lsd25_entry*> VecLyssByType(enum LSD25_TYPE t, __u64 off=0);
     LSD_API std::map<__u64, struct lsd25_entry> &operator()() {
         return lsd_map;
     }

@@ -1,8 +1,11 @@
 #ifndef BINANAL_HH
 #define BINANAL_HH
 // #include "../syx86/syx86.hh"
+#include <sys/mman.h>
+#include <fcntl.h>
 extern "C" {
     #include "../../../../utils/types.h"
+    #include "../../../../utils/include/utils.h"
     #include "./binary.h"
 };
 

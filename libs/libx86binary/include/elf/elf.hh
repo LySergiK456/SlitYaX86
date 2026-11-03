@@ -37,5 +37,6 @@ namespace Elf {
 	};
 	
 	bool dyn_is_ptr(Elf64_Dyn *dyn);
+	bool dyn_is_off(Elf64_Dyn *dyn);
 };
 #endif

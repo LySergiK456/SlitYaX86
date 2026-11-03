@@ -141,7 +141,7 @@ __u64 NixLyss::LyssMemConv(Bin_t *binary, MT src_type, __u64 value, MT dst_type)
             }
             break;
         case MT::Off:
-            if (_contain_(_p->p_offset, ALIGN_UP(_p->p_filesz, _p->p_align), value)) {
+            if (_contain_(_p->p_offset, _p->p_filesz, value)) {
                 ret=base + (value - _p->p_offset);
                 return;
             }
@@ -156,6 +156,15 @@ LSD_INTERNAL
 void NixLyss::LyssAlignBin(__u64 off, __u64 sz) {
     auto e_ehdr = LyssByType(ELF_Ehdr, 0);
     assert(!!e_ehdr);
+    void *img_ptr{e_ehdr->src.img->src.map};
+    __u64 img_size{e_ehdr->src.img->size};
+
+    __u32 perm{};
+    __wr_init(
+        reinterpret_cast<void*>(PAGE_ALIGN_DOWN(img_ptr)),
+        PAGE_ALIGN_UP(img_size),
+        &perm);
+
 
     auto ehdr = (Elf64_Ehdr*)e_ehdr->mm.mem;
     ehdr->e_entry = orig_vtov(&bin, ehdr->e_entry);
@@ -164,9 +173,20 @@ void NixLyss::LyssAlignBin(__u64 off, __u64 sz) {
     if (ehdr->e_phoff > off) ehdr->e_phoff += sz;
 
     feach(ELF_Dyn, [&](Elf64_Dyn *dyn, void *_) {
-        if (Elf::dyn_is_ptr(dyn))
+        if (!!Elf::dyn_is_ptr(dyn)) {
+            printf("LOOKUP off=%#lx\n", off);
+
+            for (auto& [base, e] : lsd_map)
+                printf("RANGE [%#lx - %#lx]\n", base, base + e.mm.sz);
+            
+            prf("BEFOR [0x%lx]\n", dyn->d_un.d_ptr);
             dyn->d_un.d_ptr =
                 orig_vtov(&bin, dyn->d_un.d_ptr);
+            prf("AFTER [0x%lx]\n", dyn->d_un.d_ptr);
+        }
+
+        if (!!Elf::dyn_is_off(dyn))
+            dyn->d_un.d_val = orig_ftof(&bin, dyn->d_un.d_val);
     });
 
     feach(ELF_Phdr, [&](Elf64_Phdr *_p, void *_) {
@@ -187,5 +207,11 @@ void NixLyss::LyssAlignBin(__u64 off, __u64 sz) {
             sec->sh_offset  += sz;
         }
     });
+
+
+    __wr_exit(
+        reinterpret_cast<void*>(PAGE_ALIGN_DOWN(img_ptr)),
+        PAGE_ALIGN_UP(img_size),
+        perm);
 }
 };

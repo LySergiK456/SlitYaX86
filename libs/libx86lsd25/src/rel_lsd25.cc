@@ -36,31 +36,34 @@ LSD_API void Lyss::push(Bin_t *img, enum LSD25_TYPE t, bin_hdr_t& v) {
         {
             __u64 min = std::min(entry.dst.off, v.off);
             __u64 lvl = std::max(entry.dst.off, v.off);
-            __u64 left= lvl + (lvl == v.off ? v.mm.sz : entry.mm.sz);
-            std::vector<__u64> vec{min, lvl, left};
+            __u64 left= std::min(entry.dst.off + entry.dst.sz, v.off + v.mm.sz);
+            __u64 max = std::max(entry.dst.off + entry.dst.sz, v.off + v.mm.sz);
+            std::vector<__u64> vec{min, lvl, left, max};
+
+            prf(BRED "%lx; %lx; %lx; %lx\n"CRST, min, lvl, left, max);
+            prf(BGRN "%lx sz=%lx; %lx sz=%lx\n"CRST, entry.dst.off, entry.dst.sz, v.off, v.mm.sz);
 
             for (auto& _off_ : vec)
             {
-                __u64 next{std::max(entry.dst.off + entry.mm.sz, v.off + v.mm.sz)};
-                for (auto& i_off : vec)
+                __u64 next{max};
+                for (auto i_off : vec)
                 {
                     if (i_off > _off_ && i_off < next)
                         next = i_off;
                 }
                 __u64 size = next - _off_;
-                if (    (_off_ == v.off && v.off < entry.dst.off)
-                    ||  (_off_ >= entry.dst.off + entry.dst.sz
-                        &&  _off_ < v.off + v.mm.sz))
-                {
+                if (!lsd_map.count(_off_) && (_off_ < max && _off_ >= min && _off_ != left)) {
+                    prf(BYLW "[%lx] %lx\n"CRST, _off_, size);
+
                     lsd_map[_off_] = (struct lsd25_entry){
-                        .t=t,
-                        // .mm=v.mm,
+                        .t=(!!_contain_(entry.dst.off, entry.dst.sz, _off_)) ? entry.t : t,
                         .raw_mem=reinterpret_cast<void*>(&img->src.mem[_off_]),
-                        .src={img, _off_, size},
-                        .dst={_off_, size}
+                        .src={ img, _off_, size },
+                        .dst={ _off_, size }
                     };
                 }
             }
+            pr("\n");
             return;
         }
     }
@@ -101,7 +104,16 @@ bin_hdr_t *new_lyss_entry(void *ptr, __u64 off, __u64 sz) {
 };
 
 namespace Assid {
-struct lsd25_entry *Lyss::LyssByType(enum LSD25_TYPE t, __u64 off) {
+LSD_API
+std::vector<struct lsd25_entry*>
+Lyss::VecLyssByType(enum LSD25_TYPE t, __u64 off) {
+    std::vector<struct lsd25_entry *> retn;
+    feach(t, [&](void *_, struct lsd25_entry *e) {
+        if (e->src.off >= off) {retn.push_back(e);}
+    });
+    return retn;
+}
+LSD_API struct lsd25_entry *Lyss::LyssByType(enum LSD25_TYPE t, __u64 off) {
     struct lsd25_entry *retn=nullptr;
     feach(t, [&](void *_, struct lsd25_entry *e) {
         if (e->src.off >= off) { retn=e; return; };
@@ -124,7 +136,7 @@ namespace Assid
 //             struct lsd25_entry e{std::move(emm)};
 //             __u64 key{k+sz};
 
-//             map.erase(k);
+//             lsd_map.erase(k);
 //             lsd_map[key] = std::move(e);
 //         }
 //         // DBG_FMT("/0x%lx\n", k);
@@ -148,47 +160,22 @@ void Lyss::LyssAlignMap(__u64 off, __u64 sz) {
     lsd_map = std::move(out);
 }
 
-LSD_API
-void
-Lyss::insert(
-    enum LSD25_TYPE    t,
-    void                *mem,   // Shellcode, whatever
-    __u64               size,   // size of mem/data
-    __u64               offset,    // offset
-    void               *tab,    // in case of Phdr/Ehdr/Dynamic
-    __u32               nth,    // tab[nth]
-    void                *e)     // the fucking entry
-{
-    // tab=nullptr;
-    // e=nullptr;
-    // if (!!tab) {
-    //     if (llist_empty(&tab->px))
-    //         llist_init(&tab->px, sizeof(struct lsd25_entry));
-    // }
-
-    struct lsd25_entry px = {
-        .raw_mem = mem,
-        .dst = {
-            .off= offset,//(!!e ? nth * sizeof(EntryT) : off),
-            .sz = size//(!!e ? sizeof(EntryT) : size)
-        },
-    };
-
-    if (!tab) {
-        // llist_push((_LL_TYPE_*)&tab->px, px);
-    } else {
-        for (auto& [off, entry] : lsd_map)
-            if (!!_contain_(off, entry.mm.sz, off)) {
-                if (llist_empty(&entry.px))
-                    llist_init(&entry.px, sizeof(struct lsd25_entry));
-
-                llist_push((_LL_TYPE_*)&entry.px, &px);
-                break;
+LSD_API void Lyss::insert(enum LSD25_TYPE t, void *mem, __u64 size, __u64 offset) {
+    for (auto& [off, sid_entry] : lsd_map)
+        if (!!_contain_(off, sid_entry.dst.sz, offset)) {
+            if (llist_empty(&sid_entry.px)) {
+                llist_init(&sid_entry.px, sizeof(struct lsd25_entry));
             }
-    }
-    __u64 out_off = offset;//((!!tab) ? tab->dst.off + px.dst.off : off);
-    LyssAlignMap(out_off, px.dst.sz);
-    LyssAlignBin(out_off, px.dst.sz);
+
+            auto px = (struct lsd25_entry){
+                .raw_mem=mem, .dst={ .off=offset, .sz=size },
+            };
+            llist_push((_LL_TYPE_*)&sid_entry.px, &px);
+            break;
+        }
+
+    LyssAlignBin(offset, size);
+    LyssAlignMap(offset, size);
 }
 
 /**

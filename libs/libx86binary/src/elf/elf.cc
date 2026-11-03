@@ -164,15 +164,11 @@ void ElfObj::parse_dynamic() {
 
 bool Elf::dyn_is_ptr(Elf64_Dyn *dyn) {
 	switch (dyn->d_tag) {
-		case DT_RUNPATH:
-		case DT_SONAME:
-		case DT_HASH:
 		case DT_STRTAB:
 		case DT_SYMTAB:
 		case DT_RELA:
 		case DT_INIT:
 		case DT_FINI:
-		case DT_RPATH:
 		case DT_PLTGOT:
 		case DT_INIT_ARRAY:
 		case DT_FINI_ARRAY:
@@ -180,6 +176,20 @@ bool Elf::dyn_is_ptr(Elf64_Dyn *dyn) {
 		case DT_JMPREL:
 		case DT_VERSYM:
 		case DT_VERNEED:
+		case DT_HASH:
+		case DT_GNU_HASH:
+			return true;
+	}
+
+	return false;
+}
+
+bool Elf::dyn_is_off(Elf64_Dyn *dyn) {
+	switch (dyn->d_tag) {
+		case DT_RUNPATH:
+		case DT_SONAME:
+		case DT_RPATH:
+		case DT_NEEDED:
 			return true;
 	}
 
@@ -198,7 +208,7 @@ __u64 ElfObj::vtof(__u64 virt) {
 }
 __u64 ElfObj::ftov(__u64 off) {
 	elfx64_each_ph(this, ph)
-		if (_contain_(ph->p_offset, ALIGN_UP(ph->p_filesz, ph->p_align), off))
+		if (_contain_(ph->p_offset, ph->p_filesz, off))
 			return ph->p_vaddr + (off - ph->p_offset);
 
 	return -1;
