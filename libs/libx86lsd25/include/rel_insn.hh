@@ -7,7 +7,7 @@ extern "C" {
 	#include "./rel_insn.h"
 };
 
-namespace RILkit
+namespace lYayo
 {
 struct YayoPx
 	: public yayo_px

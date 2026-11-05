@@ -1,0 +1,142 @@
+// int lsd25dbg(PlainRex::PTrace *pt);
+
+// #include <stdio.h>
+// #include <readline/readline.h>
+// #include <readline/history.h>
+// #include "../libx86disass/disass.hpp"
+// #include "../../utils/include/utils.hh"
+// extern "C" {
+// 	#include "../../utils/types.h"
+// };
+
+// constexpr const char *INPUT_BANNER =
+// 		BGRN "[" BBLUE"lsd25"BGRN"]>"CRST " ";
+
+// namespace x86Emu::Commands {
+// 	void cmd_info() {
+// 		puts("+");
+// 	}
+// };
+
+// int main() {
+// 	char *line{nullptr};
+// 	while (!!(line=readline(INPUT_BANNER)))
+// 	{
+// 		std::string inp(line);
+// 		add_history(line);
+// 		_defer([&]{ free(line); });
+
+// 		if (inp == "i" || inp == "info")
+// 		{	/** Information about the Process/VM **/
+// 			x86Emu::Commands::cmd_info();
+// 			continue;
+// 		}
+
+// 		if (inp == "q" || inp == "quit" || inp == "exit")
+// 			break;
+// 	}
+
+// 	return 0;
+// }
+
+
+// #ifndef __linux__
+// __attribute__((constructor)) void _die_now_() {
+// 	static_assert(0, "This needs to be compiled for Linux");
+// }
+// #endif
+
+
+// int lsd25dbg(PlainRex::PTrace *pt) {
+// 	ASMStubTemplate stub;
+// 	struct user_regs_struct regs{};
+// 	ptrace(PTRACE_GETREGS, pt->child, NULL, &regs);
+// 	if (regs.rip == RIP_STOP_ADDR)
+// 		return -1;
+
+// 	PRF_DBG("rip=" BGRN"%lx\n"CRST, regs.rip);
+
+// 	std::vector<struct procmap_query> unmap_pages;
+// 	struct procmap_query q;
+// 	memset(&q, 0, sizeof(struct procmap_query));
+// 	PR_DBG("-------------------------------");
+// 	while (!PR::ProcMapQuery(pt->child, &q, q.vma_end))
+// 	{
+// 		if (	!!(q.vma_flags & PROCMAP_QUERY_VMA_EXECUTABLE)
+// 			&&	q.vma_end - q.vma_start <= PAGE_SIZE)
+// 		{
+// 			void *insn_buf		= malloc(PAGE_SIZE);
+// 			Elf64_Ehdr *ehdr	= static_cast<Elf64_Ehdr*>(
+// 				malloc(sizeof(Elf64_Ehdr))
+// 			);
+// 			memset(ehdr, 0, sizeof(Elf64_Ehdr));
+// 			memset(insn_buf, 0, PAGE_SIZE);
+// 			pt->read_data(q.vma_start, ehdr, sizeof(Elf64_Ehdr));
+			
+// 			__u64 entry = ehdr->e_entry;
+// 			if (ehdr->e_type != ET_EXEC)
+// 				entry += q.vma_start;
+
+// 			__u64 pt_x_size{PAGE_SIZE - (entry - q.vma_start)};
+// 			pt->read_data(entry, insn_buf, pt_x_size);
+
+// 			stub = std::move(ASMStubTemplate(entry, insn_buf, pt_x_size));
+
+// 			free(insn_buf);
+// 			free(ehdr);
+// 		} else {
+// 			unmap_pages.push_back(q);
+// 		}
+// 		PRF_DBG("%llx %llx %llu\n", q.vma_start, q.vma_end, q.vma_flags);
+// 	}
+// 	PR_DBG("-------------------------------");
+	
+// 	do {
+// 		for (auto& _q : unmap_pages) {
+// 			regs.rax = SYS_munmap;
+// 			regs.rdi = _q.vma_start;
+// 			regs.rsi = PAGE_ALIGN_UP(_q.vma_end - _q.vma_start);
+// 			regs.rip = sub.syscall_addr;
+// 			ptrace(PTRACE_SETREGS, pt->child, NULL, &regs);
+// 			ptrace(PTRACE_CONT, pt->child, NULL, NULL);
+// 		}
+// 	} while (0);
+
+// 	ptrace(PTRACE_CONT, pt->child, NULL, NULL);
+// 	return 0;
+// }
+
+
+
+
+#include <stdio.h>
+#if defined(__linux__)
+# include <linux/types.h>
+# include <linux/fs.h>
+# include <sys/ptrace.h>
+# include <sys/syscall.h>
+# include <sys/ioctl.h>
+# include <sys/user.h>
+# include <sys/wait.h>
+# include <elf.h>
+# include <fcntl.h>
+#endif
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <assert.h>
+#include "../../../libx86disass/disass.hpp"
+// #include "../../../../utils/include/utils.hh"
+
+#ifndef __linux__
+__attribute__((constructor)) void _die_now_() {
+	static_assert(0, "This needs to be compiled for Linux");
+}
+#endif
+
+namespace PR = PlainRex;
+
+int main(int argc, char **argv) {
+	auto pt = PR::PTrace(const_cast<char*>(SHMEM_STUB_OUT), argc-1, &argv[1]);
+	pt.ForkRun();
+}

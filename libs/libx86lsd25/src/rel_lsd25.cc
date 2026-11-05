@@ -37,7 +37,7 @@ LSD_API void Lyss::push(Bin_t *img, enum LSD25_TYPE t, bin_hdr_t& v) {
             __u64 min = std::min(entry.dst.off, v.off);
             __u64 lvl = std::max(entry.dst.off, v.off);
             __u64 left= std::min(entry.dst.off + entry.dst.sz, v.off + v.mm.sz);
-            __u64 rght = std::max(entry.dst.off + entry.dst.sz, v.off + v.mm.sz);
+            __u64 rght= std::max(entry.dst.off + entry.dst.sz, v.off + v.mm.sz);
             std::vector<__u64> vec{min, lvl, left, rght};
 
             for (auto& _off_ : vec)
@@ -52,11 +52,15 @@ LSD_API void Lyss::push(Bin_t *img, enum LSD25_TYPE t, bin_hdr_t& v) {
                 if (    !!size && !lsd_map.count(_off_)
                     &&  (_off_ < rght && _off_ >= min && _off_ != left))
                 {
+                    __u64 type =(_off_ >= entry.dst.off
+                                &&  _off_ < entry.dst.off + entry.dst.sz) ? entry.t : t;
                     lsd_map[_off_] = (struct lsd25_entry){
-                        .t=(_off_ >= entry.dst.off && _off_ < entry.dst.off + entry.dst.sz) ? entry.t : t,
+                        .t=static_cast<enum LSD25_TYPE>(type),
                         .mm={
-                            .mem=reinterpret_cast<void*>(&img->src.mem[_off_]),
-                            .sz =size
+                            .mem=reinterpret_cast<void*>(
+                                &img->src.mem[_off_]
+                            ),
+                            .sz=size
                         },
                         .src={ img, _off_, size },
                         .dst={ _off_, size }

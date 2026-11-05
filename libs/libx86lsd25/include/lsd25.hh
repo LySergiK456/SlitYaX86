@@ -169,7 +169,7 @@ namespace Dot {
     class Dot {
         Assid::lsd25    *lsd;
     public:
-        RILkit::Yayo    yayo;
+        lYayo::Yayo     yayo;
         dot_analyzer    anal;
 
         Dot(Assid::lsd25 *_lsd);
@@ -225,7 +225,7 @@ class lsd25 : public lsd25_pack_t {
 public:
     AcidPass&       pass;
     Lyss            *lyss;
-    RILkit::Yayo&   yayo{dot.yayo};
+    lYayo::Yayo&    yayo{dot.yayo};
 
     lsd25(AcidPass& _pass, Lyss *l)
         : pass{_pass}, lsd25_pack_t{0}, lyss{l}, dot(this)

@@ -1,0 +1,56 @@
+BDIR = ./build/linux
+GCC = ccache gcc
+GXX = ccache g++
+LD = ld
+
+UTILS_PATH := $(abspath ../../utils/src)
+LIB_DISASS := $(abspath ../libx86disass/)
+X86_CFLAGS=	-I./$(LIB_DISASS)/include
+X86_LDFLAGS=-L./$(LIB_DISASS)/build/
+
+UC_CFLAGS =	-lunicorn
+
+
+CXXFLAGS = -w -MMD -MP
+CFLAGS = -w -g -MMD -MP $(X86_CFLAGS)
+
+objs = mem.o shadow.o mem_utils.o proc_maps.o ptrace.o uc.o linux_ldr.o linux_ldr_env.o self_maps.o #shmem.o
+TEST_MAIN = ./main.cc
+
+shadow.o mem_utils.o uc.o: CXXFLAGS += $(UC_CFLAGS)
+
+-include $(objs:%=$(BDIR)/%.d)
+
+all: make_stub $(objs)
+	@echo "[+] Building libx86emu (linux/ELF)"
+	@cd $(BDIR); ar rvs libx86emu.a $^
+
+.PHONY: example
+example: make_stub $(objs)
+	@echo "[+] Building (linux/ELF) Example"
+	$(GXX) $(TEST_MAIN) $(X86_LDFLAGS) $(addprefix ./$(BDIR)/,$(objs)) $(CXXFLAGS) -lunicorn -lx86disass -o ./$(BDIR)/linux_example
+	@echo "-----------executing-----------"
+	@$(shell which time) ./$(BDIR)/linux_example
+
+.PHONY: make_stub
+make_stub:
+	$(GCC) -c -O2 -static -no-pie -nostdlib src/linux/stub.c -o ./$(BDIR)/stub.o
+	$(LD) -T ./stub.ld ./$(BDIR)/stub.o -o ./$(BDIR)/stub
+
+%.o: ./src/memory/%.cc
+	$(GXX) -c $< $(CFLAGS) $(CXXFLAGS) -lunicorn -o ./$(BDIR)/$@
+
+%.o: ./src/syx86/loader/linux/%.cc
+	$(GXX) -c $< $(CFLAGS) $(CXXFLAGS) -lunicorn -o ./$(BDIR)/$@
+
+%.o: ./src/syx86/%.cc
+	$(GXX) -c $< $(CFLAGS) $(CXXFLAGS) -lunicorn -o ./$(BDIR)/$@
+
+%.o: ./src/linux/%.cc
+	$(GXX) -c $< $(CFLAGS) $(CXXFLAGS) -o ./$(BDIR)/$@
+
+%.o: ./src/%.cc
+	$(GXX) -c $< $(CFLAGS) $(CXXFLAGS) -o ./$(BDIR)/$@
+
+%.o: $(UTILS_PATH)/%.c
+	$(GCC) -c $< $(CFLAGS) -o ./$(BDIR)/$@

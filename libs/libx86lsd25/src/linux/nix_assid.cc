@@ -174,14 +174,12 @@ void NixLyss::LyssAlignBin(__u64 off, __u64 sz) {
 
     feach(ELF_Dyn, [&](Elf64_Dyn *dyn, void *_) {
         if (!!Elf::dyn_is_ptr(dyn)) {
-            prf("BEFOR [0x%lx]\n", dyn->d_un.d_ptr);
             dyn->d_un.d_ptr =
                 orig_vtov(&bin, dyn->d_un.d_ptr);
-            prf("AFTER [0x%lx]\n", dyn->d_un.d_ptr);
         }
 
-        if (!!Elf::dyn_is_off(dyn))
-            dyn->d_un.d_val = orig_ftof(&bin, dyn->d_un.d_val);
+        // if (!!Elf::dyn_is_off(dyn))  // .dnystr offset
+        //     dyn->d_un.d_val = orig_ftof(&bin, dyn->d_un.d_val);
     });
 
     feach(ELF_Phdr, [&](Elf64_Phdr *_p, void *_) {
