@@ -3,11 +3,6 @@
 #include "../../../../conf.hh"
 #include "../../../../include/syx86.hh"
 #include "../../../../include/loader/linux/linux_ldr.hh"
-extern "C" {
-	// #include "../../../../include/common/linux/proc_self_maps.h"
-	// #include "../../../../include/common/mem.h"
-	// #include "../../../../include/common/utils.h"
-};
 
 namespace x86Emu
 {
@@ -42,7 +37,7 @@ namespace x86Emu {
 			return;
 		}
 
-		DBG_FMT("[+] Loading \"%s\"", argv[0]);
+		DBG_FMT("[+] Loading %s\n", argv[0]);
 		main_elf = elfs_push(argv[0], ELF_SYMTAB_DIR);
 
 		const char *interp_str = elf_interp(main_elf);
@@ -72,7 +67,7 @@ namespace x86Emu {
 };
 
 namespace x86Emu {
-static bool ElfIsSupported(ElfObj& elf) {
+static bool ElfIsSupported(Elf::ElfObj& elf) {
 	if (!elf.IsPIC) {
 		DBG_FMT("[-] ELF is not Position-Independent \"%s\"",
 			elf.f.name);
@@ -89,7 +84,7 @@ static bool ElfIsSupported(ElfObj& elf) {
 
 namespace x86Emu
 {
-	uc_err UnixLdr::load_new_elf(std::shared_ptr<ElfObj> elf, __u64 base) {
+	uc_err UnixLdr::load_new_elf(std::shared_ptr<Elf::ElfObj> elf, __u64 base) {
 		if (!ElfIsSupported(*elf.get()))
 			return UC_ERR_RESOURCE;
 
@@ -124,15 +119,15 @@ namespace x86Emu
 
 namespace x86Emu
 {
-const char* UnixLdr::elf_interp(std::shared_ptr<ElfObj> elf) {
+const char* UnixLdr::elf_interp(std::shared_ptr<Elf::ElfObj> elf) {
 	elfx64_each_ph(dynamic_cast<elfobj_t*>(elf.get()), p)
 		if (p->p_type == PT_INTERP)
-			return (const char*)&main_elf->mem[p->p_offset];
+			return const_cast<const char*>((char*)&main_elf->mem[p->p_offset]);
 
 	return nullptr;
 }
 
-std::shared_ptr<ElfObj>& UnixLdr::elfs_push(char *name, char *sym_dir) {
-	return elfs.emplace_back(std::shared_ptr<ElfObj>{new ElfObj(name, sym_dir)});
+std::shared_ptr<Elf::ElfObj>& UnixLdr::elfs_push(char *name, char *sym_dir) {
+	return elfs.emplace_back(std::shared_ptr<Elf::ElfObj>{new Elf::ElfObj(name, sym_dir)});
 }
 };

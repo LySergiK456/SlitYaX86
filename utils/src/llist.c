@@ -1,4 +1,5 @@
 #include "../include/llist.h"
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -17,13 +18,15 @@ void *llist_push(_LL_TYPE_ *ll, void *dat) {
     if (!ll) return NULL;
 
     LLIST_SZ(ll->sz) *new = malloc(sizeof(*ll));
+    assert(new);
     new->sz = ll->sz;
     new->array = malloc(ll->sz);
+    assert(new->array);
     memcpy(new->array, dat, ll->sz);
 
     LLIST_OF(int) *last = ll;
     ll_each(ll, e) last = e;
 
     LLIST_TWINE(last, new);
-    return new;
+    return new->v;
 }

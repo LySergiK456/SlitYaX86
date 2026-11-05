@@ -6,10 +6,36 @@
 
 #ifndef KRACK_MEM_H
 #define KRACK_MEM_H
+typedef struct {
+    __u64 rax;
+    __u64 rbx;
+    __u64 rcx;
+    __u64 rdx;
+    __u64 rdi;
+    __u64 rsi;
+    __u64 rsp;
+    __u64 rbp;
+    __u64 r8;
+    __u64 r9;
+    __u64 r10;
+    __u64 r11;
+    __u64 r12;
+    __u64 r13;
+    __u64 r14;
+    __u64 r15;
+    __u64 rip;
+    __u64 gs;
+    __u64 fs;
+    __u64 rflags;
+} x86_regs;
 
 #if defined(_WIN32)
 # define HANDLE_OK(h) (!(h) || (h) != INVALID_HANDLE_VALUE)
 #endif
+
+
+#define IA32_FS_BASE    0xC0000100ULL
+#define IA32_GS_BASE    0xC0000101ULL
 
 #define PAGE_SIZE           0x1000
 #define PAGE_MASK           (PAGE_SIZE - 1)
@@ -27,6 +53,10 @@
         (((__u64)(a) >= (__u64)(b) && (__u64)(a) < (__u64)(b) + (__u64)(sz2))   \
     ||  ( (__u64)(b) >= (__u64)(a) && (__u64)(b) < (__u64)(a) + (__u64)(sz1)))
 
+enum X86OperType
+{
+    NONE, REG, IMM, PTR, RIP,
+};
 
 #define MM_VMAP 2
 #define MM_NONE 0

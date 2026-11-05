@@ -4,7 +4,7 @@
 # include <sys/ioctl.h>
 # include <stdint.h>
 
-struct procmap_query_compat {
+struct procmap_query {
     uint64_t size, query_flags, query_addr;
     uint64_t vma_start, vma_end, vma_flags;
     uint64_t vma_page_size, vma_offset, inode;
@@ -13,9 +13,10 @@ struct procmap_query_compat {
     uint64_t vma_name_addr, build_id_addr;
 };
 
-# define PROCMAP_QUERY_COMPAT \
-    _IOWR('f', 17, struct procmap_query_compat)
+# define PROCMAP_QUERY  \
+    _IOWR('f', 17, struct procmap_query)
 
+# define PROCMAP_QUERY_COVERING_OR_NEXT_VMA 0x10
 # define PROCMAP_QUERY_VMA_READABLE   0x01
 # define PROCMAP_QUERY_VMA_WRITABLE   0x02
 # define PROCMAP_QUERY_VMA_EXECUTABLE 0x04

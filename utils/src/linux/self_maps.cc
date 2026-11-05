@@ -22,11 +22,11 @@ __attribute__((constructor)) void init_self_maps() {
 }
 
 __u32 UnixMemQuery(void *addr) {
-    struct procmap_query_compat q = {0};
+    struct procmap_query q = {0};
     q.query_addr= reinterpret_cast<__u64>(addr);
     q.size      = sizeof(q);
 
-    if (ioctl(SelfMaps::fdProcSelfMap, PROCMAP_QUERY_COMPAT, &q) == -1) {
+    if (ioctl(SelfMaps::fdProcSelfMap, PROCMAP_QUERY, &q) == -1) {
         close(SelfMaps::fdProcSelfMap);
         return (SelfMaps::fdProcSelfMap = -1);
     }
